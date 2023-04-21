@@ -1,5 +1,9 @@
 const router = require("express").Router();
 const fs = require("fs");
+const {v4: uuidv4} = require("uuid")
+
+//? async
+//? write and read different functions
 
 router.get("/", (req, res) => {
   fs.readFile("./db/db.json", "utf8", (err, data) => {
@@ -19,10 +23,19 @@ router.post("/", (req, res) => {
       return;
     }
     console.log("file read");
+
+    const {title, text} = req.body
+    const newData = {
+      id: uuidv4(),
+      title: title,
+      text:text
+    }
+
     const parsedData = JSON.parse(data);
-    parsedData.push(req.body);
-    const newData = JSON.stringify(parsedData);
-    fs.writeFile("./db/db.json", newData, (err) => {
+    parsedData.push(newData);
+    const updatedData = JSON.stringify(parsedData);
+
+    fs.writeFile("./db/db.json", updatedData, (err) => {
       if (err) {
         console.error(err);
         return;
@@ -33,4 +46,7 @@ router.post("/", (req, res) => {
   });
 });
 
+router.delete("/:id", (req, res) => {
+
+})
 module.exports = router;
