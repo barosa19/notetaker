@@ -1,70 +1,54 @@
 const router = require("express").Router();
-const fs = require("fs");
-const {v4: uuidv4} = require("uuid");
+const fs = require("fs").promises;
+const { v4: uuidv4 } = require("uuid");
 
-//? async
-//? write and read different functions
+class Note{
+  constructor(title,text){
+    this.title = title,
+    this.text = text
+    this.id = uuidv4()
+  }
+}
+var readData = async () => {
+  try {
+    var data = await fs.readFile("./db/db.json", "utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-router.get("/", (req, res) => {
-  fs.readFile("./db/db.json", "utf8", (err, data) => {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    console.log("Data Received");
-    return res.json(JSON.parse(data));
-  });
+router.get("/", async (req, res) => {
+  var currentNotes = await readData();
+  return res.json(currentNotes);
 });
 
-router.post("/", (req, res) => {
-  fs.readFile("./db/db.json", "utf8", (err, data) => {
-    if (err) {
-      console.error(err);
-      return;
-    };
-    console.log("file read");
-
-    const {title, text} = req.body;
-    const newData = {
-      id: uuidv4(),
-      title: title,
-      text:text
-    };
-
-    const parsedData = JSON.parse(data);
-    parsedData.push(newData);
-    const updatedData = JSON.stringify(parsedData);
-
-    fs.writeFile("./db/db.json", updatedData, (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      console.log("New data added");
-      return res.json(newData);
-    });
-  });
+router.post("/", async (req, res) => {
+  try {
+    var currentNotes = await readData();
+    const { title, text } = req.body;
+   var newData = new Note(title,text)
+    currentNotes.push(newData);
+    await fs.writeFile("./db/db.json", JSON.stringify(currentNotes));
+    res.json(newData);
+  } catch (error) {
+    console.log(error);
+    res.status(400).json(error);
+  }
 });
 
-router.delete("/:id", (req, res) => {
-  const noteId = req.params.id;
-  fs.readFile("./db/db.json", "utf8", (err, data) => {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    const parsedData = JSON.parse(data);
-    const filteredData = parsedData.filter((notes) => notes.id !== noteId);
-    const updatedData = JSON.stringify(filteredData);
-    fs.writeFile("./db/db.json", updatedData, (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      console.log("New data added");
-      return res.json(updatedData);
-    });
+router.delete("/:id", async (req, res) => {
+  try {
+    const currentNotes = await readData()
+    const noteId = req.params.id;
+      const filteredData = currentNotes.filter((note) => note.id !== noteId);
+      await fs.writeFile("./db/db.json", JSON.stringify(filteredData))
+      res.json(filteredData)
+    
+  } catch (error) {
+    console.log(error)
+    res.status(400).json(error)
+  }
 
-  })
-})
+});
 module.exports = router;
